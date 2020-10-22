@@ -2,6 +2,9 @@ from bs4 import BeautifulSoup
 import re
 import requests
 
+#Project modules
+from node import Node
+
 
 def get_article_links(article):
     url = f"https://en.wikipedia.org{article}"
@@ -17,21 +20,36 @@ def get_article_links(article):
     return links
 
 
-def articles_shortest_path(start_articles, target_article):
-    global checked_urls
-    print(checked_urls)
-    
-    children_articles = []
-    for parent_article in start_articles:
-        children_articles += get_article_links(parent_article)
-    
-    if target_article in children_articles:
-        return 'algo'
-    else:
-        return articles_shortest_path(children_articles, target_article)
+def articles_shortest_path(start_article, target_article, max_generations=3):
+    counter = 0
+    head_node = Node(start_article, None)
+    final_node = Node(target_article, None)
+    article_links = get_article_links(start_article)
+    next_generation = [Node(child, head_node) for child in article_links]
+    while counter < max_generations:
+        if final_node in next_generation:
+            # Get the article. Ask for parents.
+            final_node_pos = next_generation.index(final_node)
+            final_node = next_generation[final_node_pos]
+            path = [final_node.article]
+            while final_node.parent is not None:
+                final_node = final_node.parent
+                path.append(final_node.article)
+            return path
+        else:
+            current_generation = next_generation
+            next_generation = []
+            for temporal_node in current_generation:
+                print(temporal_node.article)
+                article_links = get_article_links(temporal_node.article)
+                child_nodes = ([Node(child, temporal_node) 
+                                for child in article_links])
+                next_generation += child_nodes
+        counter += 1
+
+    return False
 
 
-start_article = "/wiki/Albert_Einstein"
-end_article = "/wiki/Theory_of_relativity"
-checked_urls = set()
+start_article = "/wiki/Indigenous_peoples_in_Colombia"
+end_article = "/wiki/Maya_civilization"
 print(articles_shortest_path(start_article, end_article))
